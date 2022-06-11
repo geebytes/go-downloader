@@ -1,4 +1,4 @@
-package pb
+package godownloader
 
 import (
 	"bytes"

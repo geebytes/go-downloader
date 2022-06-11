@@ -1,12 +1,15 @@
-package pb
+package godownloader
 
 import (
 	context "context"
 	"fmt"
-	"net"
+	"log"
+	"time"
 
+	"github.com/asim/go-micro/plugins/server/grpc/v4"
 	"github.com/geebytes/go-downloader/pb"
-	grpc "google.golang.org/grpc"
+	"go-micro.dev/v4"
+	"go-micro.dev/v4/registry"
 )
 
 var downloader *Downloader = NewDownloader("/data/work/download")
@@ -14,38 +17,54 @@ var downloader *Downloader = NewDownloader("/data/work/download")
 type ServerInterface interface {
 	Callback(src string, err error) (string, error)
 	// Download(ctx context.Context, in *DownloadRequest) (*DownloadResponse, error)
-	pb.DownloaderServer
+	pb.DownloaderHandler
 }
 
 type DefaultServer struct {
-	pb.UnimplementedDownloaderServer
+	// pb.UnimplementedDownloaderServer
 }
 
 func (s *DefaultServer) Callback(src string, err error) (string, error) {
 	return src, err
 }
-func (s *DefaultServer) Download(ctx context.Context, in *pb.DownloadRequest) (*pb.DownloadResponse, error) {
+func (s *DefaultServer) Download(ctx context.Context, in *pb.DownloadRequest, out *pb.DownloadResponse) error {
 	dst, err := downloader.Download(in.Request, in.FileName)
 	dst, err = s.Callback(dst, err)
 	if err != nil {
 		fmt.Println(err.Error())
-		return &pb.DownloadResponse{Dst: dst, Status: 500, Msg: err.Error()}, err
+		out.Dst = ""
+		out.Msg = err.Error()
+		out.Status = 500
+
+		return err
 
 	}
-	return &pb.DownloadResponse{Dst: dst, Status: 200}, nil
+	out.Dst = dst
+	out.Status = 200
+	out.Msg = "success"
+	return nil
 
 }
 
 func StartServer(server ServerInterface) {
-	lis, err := net.Listen("tcp", ":9527")
-	if err != nil {
-		fmt.Printf("failed to listen: %v", err)
-		return
-	}
-	s := grpc.NewServer()               // 创建gRPC服务器
-	pb.RegisterDownloaderServer(s, server) // 在gRPC服务端注册服务
-	err = s.Serve(lis)
-	if err != nil {
-		panic(err)
+	grpcServer := grpc.NewServer()
+	service := micro.NewService(
+		micro.Server(grpcServer),
+		micro.Name("downloader.service"),
+		micro.Address("0.0.0.0:9527"),
+		micro.RegisterTTL(time.Second*30),
+		micro.RegisterInterval(time.Second*10),
+		micro.Registry(registry.NewRegistry(registry.Addrs("127.0.0.1:2379"))),
+	)
+
+	// optionally setup command line usage
+	service.Init()
+
+	// Register Handlers
+	pb.RegisterDownloaderHandler(service.Server(), server)
+
+	// Run server
+	if err := service.Run(); err != nil {
+		log.Fatal(err)
 	}
 }
