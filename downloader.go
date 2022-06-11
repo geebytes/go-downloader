@@ -1,4 +1,4 @@
-package pb
+package godownloader
 
 import (
 	"bytes"
@@ -17,6 +17,7 @@ import (
 	sync "sync"
 	"time"
 
+	"github.com/geebytes/go-downloader/pb"
 	"github.com/h2non/filetype"
 	svg "github.com/h2non/go-is-svg"
 	"golang.org/x/net/http/httpproxy"
@@ -43,7 +44,7 @@ func proxyFunc(req *http.Request) (*url.URL, error) {
 	if !ok {
 		return nil, nil
 	}
-	p := proxy.(*Proxy)
+	p := proxy.(*pb.Proxy)
 	// If there is no proxy set, use default proxy from environment.
 	// This mitigates expensive lookups on some platforms (e.g. Windows).
 	envProxyOnce.Do(func() {
@@ -136,7 +137,7 @@ func (d *Downloader) GetFileContentType(localFile *os.File) (string, error) {
 
 	return kind.Extension, nil
 }
-func (d *Downloader) Download(request *Request, filename string) (string, error) {
+func (d *Downloader) Download(request *pb.Request, filename string) (string, error) {
 	var (
 		fsize int64
 	)
@@ -172,7 +173,6 @@ func (d *Downloader) Download(request *Request, filename string) (string, error)
 	if err != nil {
 		return "", err
 	}
-	fmt.Printf("downloading RANGE %d", fsize)
 	if exist {
 		req.Header.Set("Range", "bytes="+strconv.FormatInt(fsize, 10)+"-")
 	}
