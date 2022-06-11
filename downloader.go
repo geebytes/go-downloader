@@ -173,7 +173,6 @@ func (d *Downloader) Download(request *pb.Request, filename string) (string, err
 	if err != nil {
 		return "", err
 	}
-	fmt.Printf("downloading RANGE %d", fsize)
 	if exist {
 		req.Header.Set("Range", "bytes="+strconv.FormatInt(fsize, 10)+"-")
 	}
