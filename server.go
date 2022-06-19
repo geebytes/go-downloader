@@ -13,7 +13,7 @@ var downloader *Downloader = NewDownloader("/data/work/download")
 
 type ServerInterface interface {
 	Callback(src string, err error) (string, error)
-	// Download(ctx context.Context, in *DownloadRequest) (*DownloadResponse, error)
+	// Download(ctx context.Context, in *pb.DownloadRequest) (*pb.DownloadResponse, error)
 	pb.DownloaderServer
 }
 
