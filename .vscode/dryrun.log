@@ -1,0 +1,7 @@
+make --dry-run --always-make --keep-going --print-directory
+make: Entering directory '/data/work/geebytes/go-downloader'
+ 
+make: Leaving directory '/data/work/geebytes/go-downloader'
+ 
+Makefile:4: *** missing separator.  Stop.
+
